@@ -1,0 +1,17 @@
+name: Typecheck
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  typecheck:
+    name: Placeholder Typecheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Placeholder
+        run: echo "TODO: implement typecheck script"
