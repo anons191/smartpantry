@@ -27,42 +27,50 @@ jobs:
               'Build / Placeholder Build'
             ];
 
-            await github.rest.repos.updateBranchProtection({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch: 'main',
-              required_status_checks: {
-                strict: true,
-                checks: requiredChecks.map(context => ({ context }))
-              },
-              enforce_admins: true,
-              required_pull_request_reviews: {
-                required_approving_review_count: 1,
-                dismiss_stale_reviews: true,
-                require_code_owner_reviews: false
-              },
-              restrictions: null,
-              allow_force_pushes: false,
-              allow_deletions: false,
-              block_creations: false,
-              required_linear_history: false,
-              allow_fork_syncing: true,
-              require_conversation_resolution: true
-            });
+            try {
+              await github.rest.repos.updateBranchProtection({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'main',
+                required_status_checks: {
+                  strict: true,
+                  checks: requiredChecks.map(context => ({ context }))
+                },
+                enforce_admins: true,
+                required_pull_request_reviews: {
+                  required_approving_review_count: 1,
+                  dismiss_stale_reviews: true,
+                  require_code_owner_reviews: false
+                },
+                restrictions: null,
+                allow_force_pushes: false,
+                allow_deletions: false,
+                block_creations: false,
+                required_linear_history: false,
+                allow_fork_syncing: true,
+                require_conversation_resolution: true
+              });
 
-            const { data: branch } = await github.rest.repos.getBranch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch: 'main'
-            });
+              const { data: branch } = await github.rest.repos.getBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'main'
+              });
 
-            const protectedStatus = branch.protected;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: 2,
+                body: `Branch protection updated successfully. main protected = ${branch.protected}`
+              });
+            } catch (error) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: 2,
+                body: `Failed to update branch protection: ${error.status} ${error.message}`
+              });
+              throw error;
+            }
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 2,
-              body: `Branch protection updated. main protected = ${protectedStatus}`
-            });
-
-            core.info('Branch protection configured for main.');
+            core.info('Branch protection configuration attempted.');
