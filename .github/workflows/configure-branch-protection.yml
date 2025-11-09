@@ -1,6 +1,10 @@
 name: Configure Branch Protection
 
 on:
+  push:
+    branches:
+      - main
+      - chore/day1-boot
   workflow_dispatch:
 
 jobs:
@@ -16,10 +20,10 @@ jobs:
         with:
           script: |
             const requiredChecks = [
-              'Typecheck',
-              'Lint',
-              'Tests',
-              'Build'
+              'Typecheck / Placeholder Typecheck',
+              'Lint / Placeholder Lint',
+              'Tests / Placeholder Tests',
+              'Build / Placeholder Build'
             ];
 
             await github.rest.repos.updateBranchProtection({
@@ -28,13 +32,15 @@ jobs:
               branch: 'main',
               required_status_checks: {
                 strict: true,
-                checks: requiredChecks.map(name => ({
-                  context: name
+                checks: requiredChecks.map(context => ({
+                  context
                 }))
               },
               enforce_admins: false,
               required_pull_request_reviews: {
-                required_approving_review_count: 1
+                required_approving_review_count: 1,
+                dismiss_stale_reviews: true,
+                require_code_owner_reviews: false
               },
               restrictions: null,
               allow_force_pushes: false,
