@@ -1,0 +1,25 @@
+# Repository configuration managed by Probot Settings
+branches:
+  - name: main
+    protection:
+      required_status_checks:
+        strict: true
+        contexts:
+          - Typecheck / Placeholder Typecheck
+          - Lint / Placeholder Lint
+          - Tests / Placeholder Tests
+          - Build / Placeholder Build
+      enforce_admins: true
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+      restrictions: null
+      lock_branch: false
+      allow_force_pushes: false
+      allow_deletions: false
+      required_conversation_resolution: true
+      block_creations: false
+    required_linear_history: false
+    allow_fork_syncing: true
+issues:
+  template: true

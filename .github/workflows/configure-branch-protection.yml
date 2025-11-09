@@ -9,10 +9,10 @@ on:
 
 jobs:
   protect-main:
+    name: Apply Branch Protection
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: write
       administration: write
     steps:
       - name: Configure branch protection for main
@@ -32,11 +32,9 @@ jobs:
               branch: 'main',
               required_status_checks: {
                 strict: true,
-                checks: requiredChecks.map(context => ({
-                  context
-                }))
+                checks: requiredChecks.map(context => ({ context }))
               },
-              enforce_admins: false,
+              enforce_admins: true,
               required_pull_request_reviews: {
                 required_approving_review_count: 1,
                 dismiss_stale_reviews: true,
