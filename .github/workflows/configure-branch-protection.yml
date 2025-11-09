@@ -12,7 +12,7 @@ jobs:
     name: Apply Branch Protection
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       administration: write
       issues: write
     steps:
@@ -26,6 +26,9 @@ jobs:
               'Tests / Placeholder Tests',
               'Build / Placeholder Build'
             ];
+
+            let statusMessage = '';
+            let branchProtectionResult = null;
 
             try {
               await github.rest.repos.updateBranchProtection({
@@ -57,20 +60,74 @@ jobs:
                 branch: 'main'
               });
 
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: 2,
-                body: `Branch protection updated successfully. main protected = ${branch.protected}`
-              });
+              branchProtectionResult = branch;
+              statusMessage = `Branch protection updated successfully. main protected = ${branch.protected}`;
             } catch (error) {
-              await github.rest.issues.createComment({
+              statusMessage = `Failed to update branch protection: ${error.status} ${error.message}`;
+              core.setFailed(statusMessage);
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 2,
+              body: statusMessage
+            });
+
+            if (branchProtectionResult) {
+              const reportBranch = 'reports/branch-protection';
+              const refName = `heads/${reportBranch}`;
+
+              let baseSha;
+              try {
+                const ref = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: refName
+                });
+                baseSha = ref.data.object.sha;
+              } catch (error) {
+                if (error.status === 404) {
+                  const mainRef = await github.rest.git.getRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: 'heads/main'
+                  });
+                  baseSha = mainRef.data.object.sha;
+                  await github.rest.git.createRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `refs/${refName}`,
+                    sha: baseSha
+                  });
+                } else {
+                  throw error;
+                }
+              }
+
+              const reportPath = 'reports/branch-protection-status.json';
+              const reportContent = Buffer.from(
+                JSON.stringify(
+                  {
+                    generatedAt: new Date().toISOString(),
+                    branch: branchProtectionResult.name,
+                    protected: branchProtectionResult.protected,
+                    requiredChecks: branchProtectionResult.protection?.required_status_checks ?? null
+                  },
+                  null,
+                  2
+                )
+              ).toString('base64');
+
+              await github.rest.repos.createOrUpdateFileContents({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: 2,
-                body: `Failed to update branch protection: ${error.status} ${error.message}`
+                path: reportPath,
+                message: 'chore: update branch protection status report',
+                content: reportContent,
+                branch: reportBranch,
+                sha: undefined
               });
-              throw error;
             }
 
             core.info('Branch protection configuration attempted.');
